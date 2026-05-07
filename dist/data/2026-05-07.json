@@ -1,7 +1,7 @@
 {
   "meals": {
     "m1": true,
-    "m2": false,
+    "m2": true,
     "m3": false
   },
   "exercise": {
@@ -9,19 +9,11 @@
     "minutes": 0
   },
   "water": {
-    "count": 1
+    "count": 3
   },
   "habits": [
     {
       "name": "傍晚跑步",
-      "done": false
-    },
-    {
-      "name": "跑步后拉伸",
-      "done": false
-    },
-    {
-      "name": "读书",
       "done": false
     }
   ]
