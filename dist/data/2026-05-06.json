@@ -1,0 +1,20 @@
+{
+  "meals": {
+    "m1": true,
+    "m2": true,
+    "m3": true
+  },
+  "exercise": {
+    "done": true,
+    "minutes": 0
+  },
+  "water": {
+    "count": 8
+  },
+  "habits": [
+    {
+      "name": "傍晚跑步",
+      "done": true
+    }
+  ]
+}

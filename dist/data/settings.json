@@ -1,0 +1,29 @@
+{
+  "meals": [
+    {
+      "key": "m1",
+      "name": "早餐",
+      "icon": "🥣",
+      "time": "09:30"
+    },
+    {
+      "key": "m2",
+      "name": "午餐",
+      "icon": "🍱",
+      "time": "12:30"
+    },
+    {
+      "key": "m3",
+      "name": "晚餐",
+      "icon": "🍲",
+      "time": "20:10"
+    }
+  ],
+  "waterGoal": 8,
+  "exerciseGoal": 30,
+  "defaultHabits": [
+    "傍晚跑步",
+    "跑步后拉伸",
+    "读书"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"D:\\\\Ananconda3\\\\envs\\\\clever_farming\\\\python.exe\" -m http.server 8080)",
+      "Bash(start *)",
+      "Read(//d/Anaconda3/envs/clever_farming/**)",
+      "Read(//d//**)",
+      "Bash(\"D:\\\\Anaconda3\\\\envs\\\\clever_farming\\\\python.exe\" -m http.server 8080)",
+      "Bash(D:\\\\Anaconda3\\\\envs\\\\clever_farming\\\\python.exe *)",
+      "Bash(\"D:\\\\Anaconda3\\\\envs\\\\clever_farming\\\\python.exe\" app.py)",
+      "Bash(\"D:\\\\Anaconda3\\\\envs\\\\clever_farming\\\\Scripts\\\\pyinstaller.exe\" --onefile --windowed --name \"每日Tracker\" --add-data \"index.html;.\" --add-data \"manifest.json;.\" --add-data \"sw.js;.\" --add-data \"icon-192.svg;.\" --add-data \"icon-512.svg;.\" app.py)",
+      "Bash(\"D:\\\\Anaconda3\\\\envs\\\\clever_farming\\\\Scripts\\\\pyinstaller.exe\" --onefile --windowed --name \"每日Tracker\" --add-data \"index.html;.\" --add-data \"manifest.json;.\" --add-data \"sw.js;.\" --add-data \"icon-192.svg;.\" --add-data \"icon-512.svg;.\" --clean app.py)",
+      "Bash(tasklist)",
+      "Bash(D:\\\\HuaweiMoveData\\\\Users\\\\32874\\\\Desktop\\\\everyday tracker\\\\dist\\\\每日Tracker.exe *)"
+    ]
+  }
+}

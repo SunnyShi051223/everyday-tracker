@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>每日 Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e8734a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icon-192.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f5f0eb;
+    --card: #ffffff;
+    --accent: #e8734a;
+    --accent-light: #fef0eb;
+    --green: #34c759;
+    --green-light: #eafaf0;
+    --blue: #007aff;
+    --blue-light: #e8f2ff;
+    --purple: #af52de;
+    --purple-light: #f5eaf9;
+    --yellow: #ffb800;
+    --yellow-light: #fff8e6;
+    --text: #1a1a1a;
+    --text-2: #666;
+    --text-3: #aaa;
+    --border: #f0ece8;
+    --radius: 16px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.1);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, #e8734a 0%, #f5a623 50%, #ffb800 100%);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .header-left h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .header-left .header-date {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-greeting {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .settings-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .settings-btn:hover { background: rgba(255,255,255,0.3); }
+
+  /* ===== Progress Bar (inline) ===== */
+  .progress-bar-wrap {
+    background: var(--card);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: #f0ece8;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #e8734a, #f5a623, #ffb800);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .progress-pct {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    min-width: 42px;
+    text-align: right;
+  }
+  .progress-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ===== Grid Layout ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .grid .full { grid-column: 1 / -1; }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    animation: pop 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.2px;
+  }
+  .card-title .emoji { font-size: 16px; }
+  .card-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-orange { background: var(--accent-light); color: var(--accent); }
+
+  /* ===== Schedule (horizontal timeline) ===== */
+  .sched-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+    padding: 4px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sched-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 64px;
+    position: relative;
+    padding: 6px 4px;
+  }
+  .sched-item::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    right: -2px;
+    width: calc(100% - 4px);
+    height: 2px;
+    background: var(--border);
+  }
+  .sched-item:last-child::after { display: none; }
+  .sched-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .sched-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-top: 6px;
+  }
+  .sched-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* ===== Checkable items (compact) ===== */
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    flex-shrink: 0;
+    font-size: 14px;
+    color: transparent;
+  }
+  .check-circle.done {
+    border-color: var(--green);
+    background: var(--green);
+    color: white;
+  }
+  .check-item.done { opacity: 0.55; }
+  .item-icon { font-size: 20px; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 1px;
+  }
+  .item-sub {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .item-name.strikethrough { text-decoration: line-through; color: var(--text-3); }
+
+  /* ===== Exercise ===== */
+  .exercise-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .min-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8f6f3;
+    border-radius: 10px;
+    padding: 6px 10px;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .min-input-wrap:focus-within { border-color: var(--blue); background: white; }
+  .min-input {
+    width: 44px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    outline: none;
+  }
+  .min-unit { font-size: 11px; color: var(--text-3); font-weight: 500; }
+  .exercise-msg {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 8px;
+    text-align: center;
+    min-height: 18px;
+  }
+
+  /* ===== Water (compact grid) ===== */
+  .water-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .water-cup {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 2px solid #e8e4e0;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    user-select: none;
+  }
+  .water-cup:hover { transform: scale(1.05); }
+  .water-cup.filled {
+    background: var(--blue-light);
+    border-color: var(--blue);
+  }
+  .water-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .water-text { font-size: 12px; color: var(--text-2); font-weight: 500; }
+  .water-pct { font-size: 12px; font-weight: 700; color: var(--blue); }
+
+  /* ===== Habits ===== */
+  .habit-add {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .habit-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #faf9f7;
+  }
+  .habit-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(175,82,222,0.1); background: white; }
+  .habit-add-btn {
+    padding: 8px 14px;
+    background: var(--purple);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .habit-add-btn:hover { background: #9a3dd6; }
+  .del-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .del-btn:hover { color: #ff3b30; background: #fff0f0; }
+
+  /* ===== History ===== */
+  .history-toggle-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .history-toggle-btn:hover { opacity: 0.7; }
+  .history-list { margin-top: 10px; }
+  .history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-left { display: flex; align-items: center; gap: 8px; }
+  .history-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .history-date { font-size: 13px; font-weight: 500; }
+  .history-score {
+    font-weight: 700;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 8px;
+  }
+  .s-high { background: var(--green-light); color: var(--green); }
+  .s-mid { background: var(--yellow-light); color: #c78c00; }
+  .s-low { background: #fff0f0; color: #ff3b30; }
+  .s-empty { background: #f5f5f5; color: #ccc; }
+
+  /* ===== Settings Modal ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 90vh;
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    z-index: 101;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .modal.open { transform: translateY(0); }
+  .modal-handle {
+    width: 36px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px 0;
+  }
+  .modal-title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .modal-close {
+    background: #f0ece8;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: #e5e0db; }
+  .modal-body { padding: 16px 20px 32px; }
+
+  .setting-section { margin-bottom: 20px; }
+  .setting-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .meal-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    background: #faf9f7;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  .meal-edit-row input {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    outline: none;
+    padding: 4px;
+  }
+  .meal-edit-row .icon-input { width: 36px; text-align: center; font-size: 18px; }
+  .meal-edit-row .name-input { flex: 1; min-width: 0; }
+  .meal-edit-row .time-input { width: 64px; }
+  .meal-edit-row .remove-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .meal-edit-row .remove-btn:hover { color: #ff3b30; }
+  .add-meal-btn {
+    background: none;
+    border: 2px dashed #ddd;
+    padding: 8px;
+    border-radius: 12px;
+    width: 100%;
+    font-size: 13px;
+    color: var(--text-3);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .add-meal-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .num-setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #faf9f7;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .num-setting span { font-size: 14px; font-weight: 500; }
+  .num-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .num-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #e0dcd8;
+    background: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .num-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .num-btn:active { transform: scale(0.9); }
+  .num-val { font-size: 18px; font-weight: 700; min-width: 24px; text-align: center; }
+
+  .def-habit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    background: #faf9f7;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  .def-habit-row input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    outline: none;
+    padding: 4px;
+  }
+  .def-habit-row .remove-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+  }
+  .def-habit-row .remove-btn:hover { color: #ff3b30; }
+  .add-def-btn {
+    background: none;
+    border: 2px dashed #ddd;
+    padding: 8px;
+    border-radius: 12px;
+    width: 100%;
+    font-size: 13px;
+    color: var(--text-3);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .add-def-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+  .save-settings-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #e8734a, #f5a623);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .save-settings-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(232,115,74,0.3); }
+  .save-settings-btn:active { transform: scale(0.98); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+    .header-greeting { display: none; }
+  }
+
+  /* ===== Smooth transitions ===== */
+  .check-circle { transition: all 0.2s ease; }
+  .check-item { transition: opacity 0.2s ease; }
+  .water-cup { transition: all 0.15s ease; }
+  .card-badge { transition: all 0.2s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>每日 Tracker</h1>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <div class="header-right">
+    <span class="header-greeting" id="greeting"></span>
+    <button class="settings-btn" onclick="openSettings()">⚙</button>
+  </div>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-chips" id="progressStats"></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0"></div></div>
+  <span class="progress-pct" id="progressPct">0%</span>
+</div>
+
+<div class="grid" id="mainGrid"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeSettings()"></div>
+<div class="modal" id="settingsModal">
+  <div class="modal-handle"></div>
+  <div class="modal-header">
+    <div class="modal-title">设置</div>
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="setting-section">
+      <div class="setting-label">🍚 吃饭设置</div>
+      <div id="mealEditor"></div>
+      <button class="add-meal-btn" onclick="addMealRow()">+ 添加一餐</button>
+    </div>
+    <div class="setting-section">
+      <div class="setting-label">💧 喝水目标</div>
+      <div class="num-setting">
+        <span>每日目标杯数</span>
+        <div class="num-control">
+          <button class="num-btn" onclick="adjustWaterGoal(-1)">−</button>
+          <span class="num-val" id="waterGoalVal">8</span>
+          <button class="num-btn" onclick="adjustWaterGoal(1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-section">
+      <div class="setting-label">🏃 运动目标</div>
+      <div class="num-setting">
+        <span>每日目标时长 (分钟)</span>
+        <div class="num-control">
+          <button class="num-btn" onclick="adjustExerciseGoal(-5)">−</button>
+          <span class="num-val" id="exerciseGoalVal">30</span>
+          <button class="num-btn" onclick="adjustExerciseGoal(5)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting-section">
+      <div class="setting-label">✅ 默认习惯 (每天自动出现)</div>
+      <div id="defHabitEditor"></div>
+      <button class="add-def-btn" onclick="addDefHabitRow()">+ 添加习惯</button>
+    </div>
+    <button class="save-settings-btn" onclick="saveSettings()">保存设置</button>
+  </div>
+</div>
+
+<script>
+// ===== Storage abstraction (pywebview JSON files / localStorage fallback) =====
+const _cache = { settings: null, data: {} };
+let _api = null;
+
+function defaultSettings() {
+  return {
+    meals: [
+      { key: 'm1', name: '早餐', icon: '🥣', time: '09:30' },
+      { key: 'm2', name: '午餐', icon: '🍱', time: '12:30' },
+      { key: 'm3', name: '晚餐', icon: '🍲', time: '18:45' },
+    ],
+    waterGoal: 8,
+    exerciseGoal: 30,
+    defaultHabits: ['傍晚跑步', '跑步后拉伸', '读书'],
+  };
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getSettings() {
+  return _cache.settings || defaultSettings();
+}
+
+function saveSettingsToStorage(s) {
+  _cache.settings = s;
+  if (_api) {
+    _api.save_settings(s);
+  } else {
+    localStorage.setItem('tracker_settings', JSON.stringify(s));
+  }
+}
+
+function getData(date) {
+  return _cache.data[date] || null;
+}
+
+function initData(date) {
+  const s = getSettings();
+  const meals = {};
+  s.meals.forEach(m => meals[m.key] = false);
+  const habits = s.defaultHabits.map(name => ({ name, done: false }));
+  return {
+    meals,
+    exercise: { done: false, minutes: 0 },
+    water: { count: 0 },
+    habits,
+  };
+}
+
+function getTodayData() {
+  const d = todayStr();
+  let data = getData(d);
+  if (!data) {
+    data = initData(d);
+    saveData(d, data);
+  }
+  return data;
+}
+
+function saveData(date, data) {
+  _cache.data[date] = data;
+  if (_api) {
+    _api.save_data(date, data);
+  } else {
+    localStorage.setItem('tracker_' + date, JSON.stringify(data));
+  }
+}
+
+function saveToday(d) { saveData(todayStr(), d); }
+
+// Load all data from backend (pywebview or localStorage)
+async function loadAllData() {
+  if (_api) {
+    const s = await _api.get_settings();
+    _cache.settings = s || defaultSettings();
+    const today = todayStr();
+    const d = await _api.get_data(today);
+    _cache.data[today] = d;
+  } else {
+    try {
+      const raw = localStorage.getItem('tracker_settings');
+      _cache.settings = raw ? JSON.parse(raw) : defaultSettings();
+    } catch(e) { _cache.settings = defaultSettings(); }
+    const today = todayStr();
+    try {
+      const raw = localStorage.getItem('tracker_' + today);
+      _cache.data[today] = raw ? JSON.parse(raw) : null;
+    } catch(e) {}
+  }
+}
+
+// ===== Header =====
+function renderHeader() {
+  const d = new Date();
+  const wd = ['日','一','二','三','四','五','六'];
+  document.getElementById('headerDate').textContent =
+    `${d.getMonth()+1}月${d.getDate()}日 周${wd[d.getDay()]}`;
+  const h = d.getHours();
+  let g = '🌙 夜深了';
+  if (h>=9&&h<10) g='☀️ 早上好';
+  else if (h>=10&&h<12) g='💪 上午好';
+  else if (h>=12&&h<14) g='🍱 中午好';
+  else if (h>=14&&h<17) g='🚀 下午好';
+  else if (h>=17&&h<19) g='🏃 跑步时间';
+  else if (h>=19&&h<23) g='🌆 晚上好';
+  document.getElementById('greeting').textContent = g;
+}
+
+// ===== Progress =====
+function updateProgress() {
+  const s = getSettings();
+  const d = getTodayData();
+  let total = 0, done = 0, chips = [];
+
+  const mealTotal = s.meals.length;
+  const mealDone = s.meals.filter(m => d.meals[m.key]).length;
+  total += mealTotal;
+  done += mealDone;
+  if (mealTotal > 0) chips.push(`🍚${mealDone}/${mealTotal}`);
+
+  total++;
+  if (d.exercise.done) done++;
+  chips.push(`🏃${d.exercise.done ? '✓' : '—'}`);
+
+  total++;
+  if (d.water.count >= s.waterGoal) done++;
+  chips.push(`💧${d.water.count}/${s.waterGoal}`);
+
+  const hTotal = d.habits.length;
+  const hDone = d.habits.filter(h => h.done).length;
+  total += hTotal;
+  done += hDone;
+  if (hTotal > 0) chips.push(`✅${hDone}/${hTotal}`);
+
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressStats').innerHTML = chips.map(c =>
+    `<span class="stat-chip">${c}</span>`
+  ).join('');
+}
+
+// ===== Badge helper =====
+function updateBadge(el, isGood, text) {
+  el.className = 'card-badge ' + (isGood ? 'badge-green' : 'badge-orange');
+  el.textContent = text;
+}
+
+// ===== Toggle helpers (no full re-render) =====
+function toggleMeal(m, div) {
+  const d = getTodayData();
+  d.meals[m.key] = !d.meals[m.key];
+  saveToday(d);
+  // Toggle visual
+  const done = d.meals[m.key];
+  div.className = 'check-item' + (done ? ' done' : '');
+  div.querySelector('.check-circle').className = 'check-circle' + (done ? ' done' : '');
+  div.querySelector('.item-name').className = 'item-name' + (done ? ' strikethrough' : '');
+  // Update badge
+  const s = getSettings();
+  const mealDoneCount = s.meals.filter(m => d.meals[m.key]).length;
+  updateBadge(div.closest('.card').querySelector('.card-badge'),
+    mealDoneCount === s.meals.length, `${mealDoneCount}/${s.meals.length}`);
+  updateProgress();
+}
+
+function toggleExercise() {
+  const d = getTodayData();
+  const s = getSettings();
+  const exMin = document.getElementById('exMin');
+  d.exercise.done = !d.exercise.done;
+  d.exercise.minutes = parseInt(exMin.value) || 0;
+  saveToday(d);
+  // Toggle visual
+  const exCheck = document.getElementById('exCheck');
+  exCheck.className = 'check-circle' + (d.exercise.done ? ' done' : '');
+  const card = exCheck.closest('.card');
+  updateBadge(card.querySelector('.card-badge'), d.exercise.done, d.exercise.done ? '✓' : '—');
+  // Update msg
+  const exMsg = document.getElementById('exMsg');
+  if (d.exercise.done) {
+    exMsg.textContent = d.exercise.minutes ? `运动了 ${d.exercise.minutes} 分钟 🎉` : '已打卡，填写时长';
+  } else {
+    exMsg.textContent = `目标 ${s.exerciseGoal} 分钟，加油！`;
+  }
+  updateProgress();
+}
+
+function toggleWater(i) {
+  const d = getTodayData();
+  const s = getSettings();
+  d.water.count = (i < d.water.count) ? i : i + 1;
+  saveToday(d);
+  updateWaterUI();
+}
+
+function updateWaterUI() {
+  const d = getTodayData();
+  const s = getSettings();
+  const wGoal = s.waterGoal;
+  const cups = document.querySelectorAll('#waterGrid .water-cup');
+  cups.forEach((cup, i) => {
+    cup.className = 'water-cup' + (i < d.water.count ? ' filled' : '');
+    cup.textContent = i < d.water.count ? '💧' : '○';
+  });
+  const card = document.getElementById('waterGrid').closest('.card');
+  const wDone = d.water.count >= wGoal;
+  updateBadge(card.querySelector('.card-badge'), wDone, `${d.water.count}/${wGoal}`);
+  card.querySelector('.water-text').textContent = `已喝 ${d.water.count} 杯`;
+  card.querySelector('.water-pct').textContent = `${Math.round(d.water.count / wGoal * 100)}%`;
+  updateProgress();
+}
+
+function toggleHabit(i, div) {
+  const d = getTodayData();
+  d.habits[i].done = !d.habits[i].done;
+  saveToday(d);
+  const done = d.habits[i].done;
+  div.className = 'check-item' + (done ? ' done' : '');
+  div.querySelector('.check-circle').className = 'check-circle' + (done ? ' done' : '');
+  div.querySelector('.item-name').className = 'item-name' + (done ? ' strikethrough' : '');
+  updateHabitBadge();
+  updateProgress();
+}
+
+function deleteHabit(i) {
+  const d = getTodayData();
+  d.habits.splice(i, 1);
+  saveToday(d);
+  renderAll(); // Need full re-render for index recalculation
+}
+
+function updateHabitBadge() {
+  const d = getTodayData();
+  const hDoneCount = d.habits.filter(h => h.done).length;
+  const card = document.querySelector('#habitItems').closest('.card');
+  updateBadge(card.querySelector('.card-badge'),
+    hDoneCount === d.habits.length && d.habits.length > 0, `${hDoneCount}/${d.habits.length}`);
+}
+
+// ===== Full render (only on load / structural changes) =====
+function renderAll() {
+  const s = getSettings();
+  const d = getTodayData();
+  const g = document.getElementById('mainGrid');
+  g.innerHTML = '';
+
+  // --- Schedule ---
+  const schedCard = document.createElement('div');
+  schedCard.className = 'card full';
+  const schedItems = [
+    { time: '9:00', label: '起床', color: '#ffb800' },
+    { time: '9:30', label: '早餐', color: '#e8734a' },
+    { time: '10:00', label: '工作', color: '#007aff' },
+    { time: '12:30', label: '午餐', color: '#e8734a' },
+    { time: '13:00', label: '午休', color: '#af52de' },
+    { time: '14:00', label: '工作', color: '#007aff' },
+    { time: '17:30', label: '跑步', color: '#34c759' },
+    { time: '18:45', label: '晚餐', color: '#e8734a' },
+    { time: '19:30', label: '自由', color: '#af52de' },
+    { time: '23:30', label: '睡觉', color: '#ffb800' },
+  ];
+  schedCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="emoji">📅</span> 今日日程</div>
+      <span class="card-badge badge-orange">作息表</span>
+    </div>
+    <div class="sched-row">
+      ${schedItems.map(s => `
+        <div class="sched-item">
+          <span class="sched-dot" style="background:${s.color}"></span>
+          <span class="sched-time">${s.time}</span>
+          <span class="sched-label">${s.label}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  g.appendChild(schedCard);
+
+  // --- Meals ---
+  const mealCard = document.createElement('div');
+  mealCard.className = 'card';
+  const mealDoneCount = s.meals.filter(m => d.meals[m.key]).length;
+  mealCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="emoji">🍚</span> 吃饭</div>
+      <span class="card-badge ${mealDoneCount === s.meals.length && s.meals.length > 0 ? 'badge-green' : 'badge-orange'}">${mealDoneCount}/${s.meals.length}</span>
+    </div>
+    <div id="mealItems"></div>
+  `;
+  g.appendChild(mealCard);
+  const mealItems = mealCard.querySelector('#mealItems');
+  s.meals.forEach(m => {
+    const done = d.meals[m.key];
+    const div = document.createElement('div');
+    div.className = 'check-item' + (done ? ' done' : '');
+    div.innerHTML = `
+      <div class="check-circle ${done?'done':''}">✓</div>
+      <span class="item-icon">${m.icon}</span>
+      <div class="item-info">
+        <div class="item-name ${done?'strikethrough':''}">${m.name}</div>
+        <div class="item-sub">${m.time}</div>
+      </div>
+    `;
+    div.onclick = () => toggleMeal(m, div);
+    mealItems.appendChild(div);
+  });
+
+  // --- Exercise ---
+  const exCard = document.createElement('div');
+  exCard.className = 'card';
+  const exDone = d.exercise.done;
+  exCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="emoji">🏃</span> 运动</div>
+      <span class="card-badge ${exDone ? 'badge-green' : 'badge-orange'}">${exDone ? '✓' : '—'}</span>
+    </div>
+    <div class="exercise-body">
+      <div class="check-circle ${exDone?'done':''}" id="exCheck" style="cursor:pointer;">✓</div>
+      <div class="item-info">
+        <div class="item-name">今日运动</div>
+        <div class="item-sub">目标 ${s.exerciseGoal} 分钟</div>
+      </div>
+      <div class="min-input-wrap">
+        <input type="number" class="min-input" id="exMin" min="0" max="999" placeholder="0" value="${d.exercise.minutes||''}">
+        <span class="min-unit">分钟</span>
+      </div>
+    </div>
+    <div class="exercise-msg" id="exMsg"></div>
+  `;
+  g.appendChild(exCard);
+
+  document.getElementById('exCheck').onclick = toggleExercise;
+  document.getElementById('exMin').onchange = () => {
+    const d2 = getTodayData();
+    d2.exercise.minutes = parseInt(document.getElementById('exMin').value) || 0;
+    saveToday(d2);
+    const exMsg = document.getElementById('exMsg');
+    if (d2.exercise.done) {
+      exMsg.textContent = d2.exercise.minutes ? `运动了 ${d2.exercise.minutes} 分钟 🎉` : '已打卡，填写时长';
+    }
+    updateProgress();
+  };
+  // Init msg
+  const exMsg = document.getElementById('exMsg');
+  if (d.exercise.done) {
+    exMsg.textContent = d.exercise.minutes ? `运动了 ${d.exercise.minutes} 分钟 🎉` : '已打卡，填写时长';
+  } else {
+    exMsg.textContent = `目标 ${s.exerciseGoal} 分钟，加油！`;
+  }
+
+  // --- Water ---
+  const waterCard = document.createElement('div');
+  waterCard.className = 'card';
+  const wGoal = s.waterGoal;
+  const wDone = d.water.count >= wGoal;
+  waterCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="emoji">💧</span> 喝水</div>
+      <span class="card-badge ${wDone?'badge-green':'badge-orange'}">${d.water.count}/${wGoal}</span>
+    </div>
+    <div class="water-grid" id="waterGrid"></div>
+    <div class="water-status">
+      <span class="water-text">已喝 ${d.water.count} 杯</span>
+      <span class="water-pct">${Math.round(d.water.count/wGoal*100)}%</span>
+    </div>
+  `;
+  g.appendChild(waterCard);
+  const waterGrid = waterCard.querySelector('#waterGrid');
+  for (let i = 0; i < wGoal; i++) {
+    const cup = document.createElement('div');
+    cup.className = 'water-cup' + (i < d.water.count ? ' filled' : '');
+    cup.textContent = i < d.water.count ? '💧' : '○';
+    cup.onclick = () => toggleWater(i);
+    waterGrid.appendChild(cup);
+  }
+
+  // --- Habits ---
+  const habitCard = document.createElement('div');
+  habitCard.className = 'card';
+  const hDoneCount = d.habits.filter(h=>h.done).length;
+  habitCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="emoji">✅</span> 习惯</div>
+      <span class="card-badge ${hDoneCount===d.habits.length&&d.habits.length>0?'badge-green':'badge-orange'}">${hDoneCount}/${d.habits.length}</span>
+    </div>
+    <div id="habitItems"></div>
+    <div class="habit-add">
+      <input class="habit-input" id="habitInput" placeholder="添加习惯..." maxlength="20">
+      <button class="habit-add-btn" id="habitAddBtn">+</button>
+    </div>
+  `;
+  g.appendChild(habitCard);
+  const hItems = habitCard.querySelector('#habitItems');
+  if (d.habits.length === 0) {
+    hItems.innerHTML = '<div style="font-size:12px;color:var(--text-3);padding:8px 0;text-align:center;">暂无习惯</div>';
+  }
+  d.habits.forEach((h, i) => {
+    const div = document.createElement('div');
+    div.className = 'check-item' + (h.done ? ' done' : '');
+    div.innerHTML = `
+      <div class="check-circle ${h.done?'done':''}">✓</div>
+      <div class="item-info">
+        <div class="item-name ${h.done?'strikethrough':''}">${h.name}</div>
+      </div>
+      <button class="del-btn">✕</button>
+    `;
+    div.querySelector('.check-circle').onclick = (e) => { e.stopPropagation(); toggleHabit(i, div); };
+    div.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteHabit(i); };
+    hItems.appendChild(div);
+  });
+
+  const hInput = habitCard.querySelector('#habitInput');
+  const hBtn = habitCard.querySelector('#habitAddBtn');
+  function doAddHabit() {
+    const name = hInput.value.trim();
+    if (!name) return;
+    d.habits.push({ name, done: false });
+    saveToday(d);
+    renderAll();
+  }
+  hBtn.onclick = doAddHabit;
+  hInput.onkeydown = (e) => { if (e.key === 'Enter') doAddHabit(); };
+
+  // --- History ---
+  const histCard = document.createElement('div');
+  histCard.className = 'card full';
+  histCard.innerHTML = `
+    <button class="history-toggle-btn" id="histToggle">📊 历史记录</button>
+    <div class="history-list" id="histList" style="display:none;"></div>
+  `;
+  g.appendChild(histCard);
+  histCard.querySelector('#histToggle').onclick = async () => {
+    const list = histCard.querySelector('#histList');
+    if (list.style.display === 'none') {
+      list.style.display = 'block';
+      await renderHistory(list);
+    } else {
+      list.style.display = 'none';
+    }
+  };
+
+  updateProgress();
+}
+
+async function loadPastData(dateStr) {
+  if (_cache.data[dateStr] !== undefined) return _cache.data[dateStr];
+  let data = null;
+  if (_api) {
+    data = await _api.get_data(dateStr);
+  } else {
+    try {
+      const raw = localStorage.getItem('tracker_' + dateStr);
+      data = raw ? JSON.parse(raw) : null;
+    } catch(e) {}
+  }
+  _cache.data[dateStr] = data;
+  return data;
+}
+
+async function renderHistory(container) {
+  const s = getSettings();
+  container.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const data = await loadPastData(dateStr);
+    let total = 0, done = 0;
+
+    if (data) {
+      s.meals.forEach(m => { total++; if (data.meals[m.key]) done++; });
+      total++; if (data.exercise.done) done++;
+      total++; if (data.water.count >= s.waterGoal) done++;
+      (data.habits||[]).forEach(h => { total++; if (h.done) done++; });
+    }
+
+    const pct = (!data || total === 0) ? -1 : Math.round(done / total * 100);
+    const display = pct < 0 ? '—' : pct + '%';
+    let cls = 's-empty';
+    if (pct >= 80) cls = 's-high';
+    else if (pct >= 50) cls = 's-mid';
+    else if (pct >= 0) cls = 's-low';
+
+    const dotColor = pct < 0 ? '#ddd' : pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : '#ff3b30';
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    row.innerHTML = `
+      <div class="history-left">
+        <span class="history-dot" style="background:${dotColor}"></span>
+        <span class="history-date">${dateStr.replace(/-/g,'/')}</span>
+      </div>
+      <span class="history-score ${cls}">${display}</span>
+    `;
+    container.appendChild(row);
+  }
+}
+
+// ===== Settings Modal =====
+let settingsDraft = null;
+
+function openSettings() {
+  settingsDraft = JSON.parse(JSON.stringify(getSettings()));
+  renderSettingsEditor();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function renderSettingsEditor() {
+  const mealDiv = document.getElementById('mealEditor');
+  mealDiv.innerHTML = '';
+  settingsDraft.meals.forEach((m, i) => {
+    const row = document.createElement('div');
+    row.className = 'meal-edit-row';
+    row.innerHTML = `
+      <input class="icon-input" value="${m.icon}" maxlength="2" data-idx="${i}" data-field="icon" placeholder="🍚">
+      <input class="name-input" value="${m.name}" maxlength="10" data-idx="${i}" data-field="name" placeholder="名称">
+      <input class="time-input" type="time" value="${m.time}" data-idx="${i}" data-field="time">
+      <button class="remove-btn" data-idx="${i}">✕</button>
+    `;
+    mealDiv.appendChild(row);
+  });
+
+  mealDiv.querySelectorAll('input').forEach(inp => {
+    inp.onchange = () => {
+      const idx = parseInt(inp.dataset.idx);
+      const field = inp.dataset.field;
+      settingsDraft.meals[idx][field] = inp.value;
+    };
+  });
+  mealDiv.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.onclick = () => {
+      settingsDraft.meals.splice(parseInt(btn.dataset.idx), 1);
+      renderSettingsEditor();
+    };
+  });
+
+  document.getElementById('waterGoalVal').textContent = settingsDraft.waterGoal;
+  document.getElementById('exerciseGoalVal').textContent = settingsDraft.exerciseGoal;
+
+  const defDiv = document.getElementById('defHabitEditor');
+  defDiv.innerHTML = '';
+  settingsDraft.defaultHabits.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'def-habit-row';
+    row.innerHTML = `
+      <input value="${name}" maxlength="20" data-idx="${i}" placeholder="习惯名称">
+      <button class="remove-btn" data-idx="${i}">✕</button>
+    `;
+    defDiv.appendChild(row);
+  });
+  defDiv.querySelectorAll('input').forEach(inp => {
+    inp.onchange = () => {
+      settingsDraft.defaultHabits[parseInt(inp.dataset.idx)] = inp.value;
+    };
+  });
+  defDiv.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.onclick = () => {
+      settingsDraft.defaultHabits.splice(parseInt(btn.dataset.idx), 1);
+      renderSettingsEditor();
+    };
+  });
+}
+
+function addMealRow() {
+  settingsDraft.meals.push({ key: 'm_' + Date.now(), name: '', icon: '🍽️', time: '12:00' });
+  renderSettingsEditor();
+}
+
+function adjustWaterGoal(delta) {
+  settingsDraft.waterGoal = Math.max(1, Math.min(20, settingsDraft.waterGoal + delta));
+  document.getElementById('waterGoalVal').textContent = settingsDraft.waterGoal;
+}
+
+function adjustExerciseGoal(delta) {
+  settingsDraft.exerciseGoal = Math.max(5, Math.min(300, settingsDraft.exerciseGoal + delta));
+  document.getElementById('exerciseGoalVal').textContent = settingsDraft.exerciseGoal;
+}
+
+function addDefHabitRow() {
+  settingsDraft.defaultHabits.push('');
+  renderSettingsEditor();
+}
+
+function saveSettings() {
+  document.querySelectorAll('#mealEditor input').forEach(inp => {
+    const idx = parseInt(inp.dataset.idx);
+    const field = inp.dataset.field;
+    if (!isNaN(idx) && field) settingsDraft.meals[idx][field] = inp.value;
+  });
+  document.querySelectorAll('#defHabitEditor input').forEach(inp => {
+    const idx = parseInt(inp.dataset.idx);
+    if (!isNaN(idx)) settingsDraft.defaultHabits[idx] = inp.value;
+  });
+
+  settingsDraft.meals = settingsDraft.meals.filter(m => m.name.trim() !== '');
+  settingsDraft.defaultHabits = settingsDraft.defaultHabits.filter(h => h.trim() !== '');
+
+  saveSettingsToStorage(settingsDraft);
+  closeSettings();
+  renderAll();
+}
+
+// ===== Init =====
+let _initDone = false;
+
+async function init() {
+  if (_initDone) return;
+  _initDone = true;
+  if (window.pywebview && window.pywebview.api) {
+    _api = window.pywebview.api;
+  }
+  await loadAllData();
+  renderHeader();
+  renderAll();
+}
+
+// pywebview fires 'pywebviewready' when API is ready
+window.addEventListener('pywebviewready', () => {
+  init();
+});
+
+// Fallback: if event never fires (browser mode), init after short delay
+setTimeout(() => { init(); }, 300);
+
+// PWA Service Worker (browser mode only)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    if (!_api) navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+</body>
+</html>
